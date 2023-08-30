@@ -9,11 +9,13 @@ const refs = {
   searchButton: document.querySelector('#submit'),
   searchBox: document.querySelector('.search-box'),
   gallery: document.querySelector('.gallery'),
+  loadButton: document.querySelector('.load-more'),
 };
 
-const perPage = 40;
 let currentPage = 1;
 let query = '';
+
+refs.loadButton.classList.add('is-hidden');
 
 refs.form.addEventListener('submit', searchImages);
 
@@ -27,20 +29,23 @@ async function searchImages(event) {
     const getData = await getImages(query);
     const { hits, totalHits } = getData;
 
-    if (!hits) {
+    if (hits.length === 0) {
       Notiflix.Notify.failure(
         'Sorry, there are no images matching your search query. Please try again.'
       );
+      refs.loadButton.classList.add('is-hidden');
       return;
     }
     Notiflix.Notify.info(`Hooray! We found ${totalHits} images.`);
 
     refs.gallery.insertAdjacentHTML('beforeend', createGallery(hits));
+    refs.loadButton.classList.remove('is-hidden');
 
     new SimpleLightbox('.link-lightbox', {
       captionsData: 'alt',
       captionDelay: 250,
-    });
+      captions: true,
+    }).refresh();
   } catch (error) {
     console.error(error);
     Notiflix.Notify.failure('Error fetching images');
@@ -62,7 +67,7 @@ function createGallery(hits) {
         return `<a href="${largeImageURL}" class="link-lightbox">
         <div class="photo-card">
         <img src="${webformatURL}" alt="${tags}" loading="lazy" />
-        <div class="info">
+        <div class="info overlay">
           <p class="info-item">
             <b>Likes ${likes}</b>
           </p>
@@ -83,20 +88,25 @@ function createGallery(hits) {
     .join(' ');
 }
 
-// Поле match: Ви використовуєте деструктуризацію для отримання поля match з getData, але ви не показали структуру getData. Зрозуміло, що там має бути поле match, але його наявність та структура не є зрозумілою.
+refs.loadButton.addEventListener('click', clickOnLoad);
 
-// Відсутність параметру page при виклику getImages: Якщо ви плануєте підтримувати пагінацію, вам потрібно буде передати currentPage як другий аргумент функції getImages.
-// HTML Injection: При створенні галереї ви вставляєте дані без екранування, що може призвести до атак на безпеку (наприклад, XSS-атаки).
-// Відсутність декларацій типів: Хоча JavaScript не вимагає декларації типів, ви можете покращити читабельність і надійність коду, використовуючи JSDoc або TypeScript.
-// Створення Lightbox: Метод createLightbox() краще викликати після успішної вставки HTML для гарантії, що всі елементи наявні в DOM.
-// Орфографія та кодування: У вас є невелика неузгодженість в назвах класів і ідентифікаторів. Зазвичай краще дотримуватися одного стилю.
-// Зробіть виправлення, і ваш код буде набагато надійнішим та безпечнішим.
+async function clickOnLoad() {
+  currentPage += 1;
 
-// function createLightbox() {
-//   const lightbox = new SimpleLightbox('.gallery a', {
-//     captions: true,
-//     captionsData: 'alt',
-//     captionDelay: 250,
-//   });
-//   lightbox.refresh();
-// }
+  try {
+    const { hits } = await getImages(query, currentPage);
+    refs.gallery.insertAdjacentHTML('beforeend', createGallery(hits));
+    refs.loadButton.classList.remove('is-hidden');
+
+    new SimpleLightbox('.link-lightbox', {
+      captionsData: 'alt',
+      captionDelay: 250,
+      captions: true,
+    }).refresh();
+  } catch (error) {
+    console.error(error);
+    Notiflix.Notify.failure(
+      "We're sorry, but you've reached the end of search results."
+    );
+  }
+}

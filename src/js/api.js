@@ -3,6 +3,7 @@ import Notiflix from 'notiflix';
 import 'notiflix/dist/notiflix-3.2.6.min.css';
 
 const URL = 'https://pixabay.com/api/';
+const perPage = 40;
 
 const getImages = async (value, page) => {
   try {
@@ -13,6 +14,8 @@ const getImages = async (value, page) => {
         image_type: 'photo',
         orientation: 'horizontal',
         safesearch: 'true',
+        page: page,
+        per_page: perPage,
       },
     });
     return response.data;
